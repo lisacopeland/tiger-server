@@ -6,7 +6,9 @@ AWS.config.update({
   region: "us-east-1",
   endpoint: "http://localhost:8000",
 });
-var dynamodb = new AWS.DynamoDB();
+
+const PAGE_LIMIT = 10;
+
 var docClient = new AWS.DynamoDB.DocumentClient();
 // This responds with "Hello World" on the homepage
 var allowlist = ["http://localhost:4200"];
@@ -25,7 +27,7 @@ app.get("/movies", cors(corsOptions), function (req, res) {
   console.log('req.query is ', req.query, ' req.params is ', req.params);
   var params = {
     TableName: "Movies",
-    Limit: 100,
+    Limit: PAGE_LIMIT,
   };
   if (req.query.startKeyTitle !== undefined) {
     params.ExclusiveStartKey = {
@@ -36,11 +38,16 @@ app.get("/movies", cors(corsOptions), function (req, res) {
   if (req.query.year) {
     var yearSearch = parseInt(req.query.year);
     params.ExpressionAttributeNames = { "#y": "year"}
-    params.FilterExpression = '#y = :s';
+    params.KeyConditionExpression = '#y = :s';
     params.ExpressionAttributeValues =  { ':s': yearSearch }
+  } else {
+    params.ExpressionAttributeNames = { "#y": "year" };
+    params.KeyConditionExpression = "#y = :s";
+    params.ExpressionAttributeValues = { ":s": 1940 };
   }
   console.log('going to scan, params is ', params);
-  docClient.scan(params, function (err, data) {
+  // TODO: Query is not guaranteed to bring back all 20 records
+  docClient.query(params, function (err, data) {
     if (err) {
       console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
       res.status(500).json({ error: err.message });
