@@ -59,6 +59,9 @@ app.get("/movies", cors(corsOptions), function (req, res) {
       }
       if (data.LastEvaluatedKey !== undefined) {
         resObject.LastEvaluatedKey = data.LastEvaluatedKey
+        resObject.last = false;
+      } else {
+        resObject.last = true;
       }
       res.send(resObject);
     }
